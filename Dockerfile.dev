@@ -5,7 +5,7 @@ WORKDIR /usr/src/app
 # Chỉ copy package.json để tận dụng cache của Docker cho node_modules
 COPY package*.json ./
 
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # Copy toàn bộ mã nguồn vào container
 COPY . .

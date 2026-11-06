@@ -1,0 +1,38 @@
+services:
+  api-db:
+    image: mysql:8.0
+    container_name: prod_mysql_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_DATABASE: '${DB_DATABASE_NAME}'
+    ports:
+      - '3306:3306'
+    volumes:
+      - prod_mysql_data:/var/lib/mysql
+    networks:
+      - prod-network
+
+  api-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: prod_api_server
+    restart: always
+    ports:
+      - '3000:3000'
+    env_file:
+      - .env
+    environment:
+      DB_HOST: api-db
+    depends_on:
+      - api-db
+    networks:
+      - prod-network
+
+volumes:
+  prod_mysql_data:
+
+networks:
+  prod-network:
+    driver: bridge
