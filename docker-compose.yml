@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # --- SERVICE DATABASE (MYSQL) ---
+  api-db:
+    image: mysql:8.0
+    container_name: nest_mysql_db
+    restart: always
+    environment:
+      # Lấy trực tiếp mật khẩu root và db name từ file .env của bạn
+      MYSQL_ROOT_PASSWORD: 'Aa@123456'
+      MYSQL_DATABASE: 'nest_tutorial'
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - nest-network
+
+  # --- SERVICE NESTJS ---
+  api-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: nest_api_server
+    restart: always
+    ports:
+      - '3000:3000'
+    # Docker sẽ tự động nạp toàn bộ các biến trong file .env vào container
+    env_file:
+      - .env
+    environment:
+      # Ghi đè duy nhất biến DB_HOST để NestJS tìm đúng container MySQL trong mạng nội bộ
+      DB_HOST: api-db
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - api-db
+    networks:
+      - nest-network
+
+volumes:
+  mysql_data:
+
+networks:
+  nest-network:
+    driver: bridge

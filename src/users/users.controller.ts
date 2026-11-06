@@ -11,6 +11,7 @@ import {
   UseGuards,
   Request,
   UnauthorizedException,
+  Req,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -30,6 +31,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { RefreshTokenDto } from './dto/refreshToken.dto';
+import { GoogleAuthGuard } from 'google-auth.guard';
+import { Public } from './decorators/public.decorator';
 
 @ApiTags('Users')
 @Controller('/api/v1/users')
@@ -86,6 +89,25 @@ export class UsersController {
       message: this.i18n.t('common.logout', {
         args: { id: userInfo.id },
       }),
+    };
+  }
+
+  // Google OAuth2 login
+  @Public()
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  async googleAuth(@Req() req) {}
+
+  @Public()
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  googleAuthRedirect(@Req() req) {
+    // Dữ liệu User mà Google trả về nằm trong req.user (được xử lý từ hàm validate() ở file Strategy)
+    const userFromGoogle = req.user;
+
+    return {
+      message: 'Google Authentication Successful!',
+      user: userFromGoogle,
     };
   }
 
