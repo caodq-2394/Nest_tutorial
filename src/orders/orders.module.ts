@@ -11,13 +11,14 @@ import { Payment } from '../payments/entities/payment.entity';
 import { MailModule } from 'src/mail/mail.module';
 import { UsersService } from 'src/users/users.service';
 import { User } from 'src/users/entities/user.entity';
+import { AdminOrdersController } from './admin-orders.controller';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Order, OrderItem, Product, Payment, User]),
     MailModule,
   ],
-  controllers: [OrderController],
+  controllers: [OrderController, AdminOrdersController],
   providers: [OrderService, UsersService],
   exports: [OrderService],
 })

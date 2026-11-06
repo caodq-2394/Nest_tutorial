@@ -18,6 +18,8 @@ import { Product } from '../products/entities/product.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { MailService } from 'src/mail/mail.service';
 import { InjectRepository } from '@nestjs/typeorm';
+import { OrderQueryDto } from './dto/order-query.dto';
+import { UpdateOrderStatusDto } from './dto/update-order.dto';
 
 @Injectable()
 export class OrderService {
@@ -219,5 +221,112 @@ export class OrderService {
     const savedOrder = await this.orderRepository.save(order);
 
     return savedOrder;
+  }
+
+  async findAllForAdmin(query: OrderQueryDto) {
+    const { status, search, page = 1, limit = 20 } = query;
+
+    const qb = this.orderRepository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.user', 'user')
+      .orderBy('order.createdAt', 'DESC');
+
+    if (status) {
+      qb.andWhere('order.status = :status', {
+        status,
+      });
+    }
+
+    if (search) {
+      qb.andWhere(
+        `(order.orderCode LIKE :search
+        OR order.recipientName LIKE :search
+        OR order.recipientPhone LIKE :search)`,
+        {
+          search: `%${search}%`,
+        },
+      );
+    }
+
+    qb.skip((page - 1) * limit);
+    qb.take(limit);
+
+    const [items, total] = await qb.getManyAndCount();
+
+    return {
+      items,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async findOneForAdmin(id: number) {
+    const order = await this.orderRepository.findOne({
+      where: { id },
+      relations: {
+        user: true,
+        items: {
+          product: {
+            images: true,
+          },
+        },
+        payment: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    return order;
+  }
+
+  async updateStatus(id: number, dto: UpdateOrderStatusDto) {
+    const order = await this.orderRepository.findOne({
+      where: { id },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    this.validateStatusTransition(order.status, dto.status);
+
+    if (dto.status === OrderStatus.CANCELLED && !dto.rejectReason?.trim()) {
+      throw new BadRequestException('Reject reason is required');
+    }
+
+    order.status = dto.status;
+
+    return this.orderRepository.save(order);
+  }
+
+  private validateStatusTransition(
+    currentStatus: OrderStatus,
+    nextStatus: OrderStatus,
+  ) {
+    const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
+      [OrderStatus.PENDING]: [OrderStatus.CONFIRMED],
+
+      [OrderStatus.CONFIRMED]: [OrderStatus.PROCESSING, OrderStatus.CANCELLED],
+
+      [OrderStatus.PROCESSING]: [OrderStatus.SHIPPING],
+
+      [OrderStatus.SHIPPING]: [OrderStatus.DELIVERED],
+
+      [OrderStatus.DELIVERED]: [],
+
+      [OrderStatus.CANCELLED]: [],
+    };
+
+    if (!allowedTransitions[currentStatus].includes(nextStatus)) {
+      throw new BadRequestException(
+        `Cannot change order status from ${currentStatus} to ${nextStatus}`,
+      );
+    }
   }
 }

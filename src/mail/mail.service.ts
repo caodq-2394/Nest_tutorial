@@ -59,4 +59,60 @@ export class MailService {
 
     return result;
   }
+
+  async sendMonthlyRevenueReport(params: {
+    to: string;
+    year: number;
+    month: number;
+    revenue: number;
+    totalOrders: number;
+  }) {
+    const { to, year, month, revenue, totalOrders } = params;
+    console.log('📧 MAIL_USER:', process.env.MAIL_USER);
+    console.log('📧 MAIL_TO:', params.to);
+
+    return this.transporter.sendMail({
+      from: `"Your Store" <${process.env.MAIL_USER}>`,
+      to,
+      subject: `Báo cáo doanh thu tháng ${month}/${year}`,
+      html: `
+      <!DOCTYPE html>
+      <html>
+        <body>
+          <h2>📊 Báo cáo doanh thu tháng ${month}/${year}</h2>
+
+          <p>
+            Xin chào Admin,
+          </p>
+
+          <h3>Tổng quan</h3>
+
+          <table>
+            <tr>
+              <td><strong>Tháng</strong></td>
+              <td>${month}/${year}</td>
+            </tr>
+
+            <tr>
+              <td><strong>Tổng đơn hàng</strong></td>
+              <td>${totalOrders}</td>
+            </tr>
+
+            <tr>
+              <td><strong>Doanh thu</strong></td>
+              <td>
+                ${revenue.toLocaleString('vi-VN')} VNĐ
+              </td>
+            </tr>
+          </table>
+
+          <p>
+            Đây là báo cáo doanh thu tự động được
+            hệ thống gửi vào đầu mỗi tháng.
+          </p>
+        </body>
+      </html>
+    `,
+    });
+  }
 }

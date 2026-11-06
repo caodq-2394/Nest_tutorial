@@ -66,8 +66,8 @@ export class UsersController {
     return this.authService.login(user);
   }
 
-  @ApiExcludeEndpoint()
   @Post('/refresh')
+  @ApiBearerAuth()
   async refresh(@Body() refreshTokenDto: RefreshTokenDto) {
     if (!refreshTokenDto?.refreshToken) {
       throw new UnauthorizedException('Refresh token is required');

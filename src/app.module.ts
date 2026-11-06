@@ -17,6 +17,8 @@ import { join } from 'path';
 import { ProductImageModule } from './product-image/product-image.module';
 import { OrdersModule } from './orders/orders.module';
 import { PaymentsModule } from './payments/payments.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -59,6 +61,7 @@ import { PaymentsModule } from './payments/payments.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ScheduleModule.forRoot(),
     UsersModule,
     ProductsModule,
     CategoriesModule,
@@ -66,6 +69,7 @@ import { PaymentsModule } from './payments/payments.module';
     ProductImageModule,
     OrdersModule,
     PaymentsModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
