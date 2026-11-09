@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtService } from '@nestjs/jwt';
@@ -15,6 +14,14 @@ export class AuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    if (context.getType() === 'rpc') {
+      const isPublic = this.reflector.getAllAndOverride<boolean>(
+        IS_PUBLIC_KEY,
+        [context.getHandler(), context.getClass()],
+      );
+      return isPublic === true;
+    }
+
     const request = context.switchToHttp().getRequest<Request>();
 
     // 1. ĐƯA LÊN ĐẦU: Kiểm tra cứng URL (Giải pháp chống sập tuyệt đối cho Google Auth)
@@ -49,7 +56,9 @@ export class AuthGuard implements CanActivate {
     }
 
     try {
-      const payload = await this.jwtService.verifyAsync(token, {
+      const payload = await this.jwtService.verifyAsync<{
+        id?: string | number;
+      }>(token, {
         secret: process.env.JWT_ACCESS_SECRET,
       });
 

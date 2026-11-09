@@ -47,6 +47,7 @@ import { APP_GUARD } from '@nestjs/core';
 
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
+
       useFactory: (configService: ConfigService) => {
         console.log(
           '===> [PRODUCTION] KẾT NỐI POSTGRES QUA THÔNG SỐ TƯỜNG MINH!',
@@ -68,6 +69,20 @@ import { APP_GUARD } from '@nestjs/core';
           },
         };
       },
+
+      // Run on local with MySQL
+      // useFactory: (configService: ConfigService) => ({
+      //   type: 'mysql',
+      //   host: configService.get('DB_HOST'),
+      //   port: +configService.get('DB_PORT'),
+      //   username: configService.get('DB_USERNAME'),
+      //   password: configService.get('DB_PASSWORD'),
+      //   database: configService.get('DB_DATABASE_NAME'),
+      //   entities: [User, Product, Category, Cart, CartItem],
+      //   // entities: ['src/**/*.entity.ts'],
+      //   autoLoadEntities: true,
+      //   synchronize: false,
+      // }),
     }),
 
     // ClientsModule.register([

@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
+import { Public } from './users/decorators/public.decorator';
 // import { ClientKafka, EventPattern, Payload } from '@nestjs/microservices';
 
 @Controller()
@@ -10,6 +11,7 @@ export class AppController {
   ) {}
 
   @Get()
+  @Public()
   getHello(): string {
     return this.appService.getHello();
   }

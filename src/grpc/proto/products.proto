@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package products;
+
+service ProductCatalog {
+  rpc GetProduct (GetProductRequest) returns (Product);
+  rpc ListFeaturedProducts (Empty) returns (ProductList);
+}
+
+message Empty {}
+
+message GetProductRequest {
+  int32 id = 1;
+}
+
+message ProductList {
+  repeated Product items = 1;
+}
+
+message Product {
+  int32 id = 1;
+  string name = 2;
+  string description = 3;
+  double price = 4;
+  int32 stock = 5;
+  bool isActive = 6;
+  bool isFeatured = 7;
+  string createdAt = 8;
+  string updatedAt = 9;
+  int32 categoryId = 10;
+  string mainImage = 11;
+}
