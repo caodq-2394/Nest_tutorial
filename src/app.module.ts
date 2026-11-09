@@ -48,8 +48,7 @@ import { APP_GUARD } from '@nestjs/core';
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const dbUrl =
-          configService.get<string>('DATABASE_URL') || process.env.DATABASE_URL;
+        const dbUrl = process.env.DATABASE_URL;
 
         console.log(
           '===> ĐỊA CHỈ DATABASE TRÊN CLOUD LÀ:',
