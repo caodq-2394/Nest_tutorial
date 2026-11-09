@@ -21,7 +21,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ReportsModule } from './reports/reports.module';
 import { AuthGuard } from './guards/auth.guard';
 import { APP_GUARD } from '@nestjs/core';
-import { ClientsModule, Transport } from '@nestjs/microservices';
+
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
@@ -63,21 +63,6 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    ClientsModule.register([
-      {
-        name: 'KAFKA_SERVICE',
-        transport: Transport.KAFKA,
-        options: {
-          client: {
-            clientId: 'nest-tutorial',
-            brokers: [process.env.KAFKA_BROKERS || 'localhost:9092'],
-          },
-          consumer: {
-            groupId: 'nest-tutorial-consumer',
-          },
-        },
-      },
-    ]),
     ScheduleModule.forRoot(),
     UsersModule,
     ProductsModule,
