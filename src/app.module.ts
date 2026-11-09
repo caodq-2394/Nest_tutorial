@@ -48,16 +48,23 @@ import { APP_GUARD } from '@nestjs/core';
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        // 🚀 ÉP BUỘC DÙNG POSTGRES PUBLIC URL
-        console.log('===> [PRODUCTION] ÉP KẾT NỐI POSTGRES QUA PUBLIC URL!');
+        console.log(
+          '===> [PRODUCTION] KẾT NỐI POSTGRES QUA THÔNG SỐ TƯỜNG MINH!',
+        );
         return {
           type: 'postgres',
-          url: 'postgresql://postgres:AblXwvicJOSLydmMorjaUubRsfOBYCVS@maglev.proxy.rlwy.net:xxxxx/railway',
+          // Hãy điền chính xác thông tin lấy từ tab Variables của service Postgres trên Railway vào đây:
+          host: 'postgres.railway.internal', // Hoặc domain proxy công khai của bạn ví dụ: maglev.proxy.rlwy.net
+          port: 5432, // Đổi thành số cổng thật của bạn nếu dùng Public (ví dụ 12345)
+          username: 'postgres',
+          password: 'AblXwvicJOSLydmMorjaUubRsfOBYCVS',
+          database: 'railway',
+
           entities: [User, Product, Category, Cart, CartItem],
           autoLoadEntities: true,
-          synchronize: true, // Tự động tạo bảng dữ liệu
+          synchronize: true, // Tự động tạo bảng dữ liệu trên Cloud
           ssl: {
-            rejectUnauthorized: false, // Bắt buộc phải có dòng này khi kết nối từ ngoài vào Postgres Railway
+            rejectUnauthorized: false, // Bắt buộc để kết nối qua môi trường mạng an toàn
           },
         };
       },
