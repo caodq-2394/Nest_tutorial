@@ -48,32 +48,29 @@ import { APP_GUARD } from '@nestjs/core';
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        // Đọc biến môi trường tổng hợp từ Railway
+        // Đọc trực tiếp từ hệ thống hoặc qua ConfigService
         const dbUrl =
           process.env.DATABASE_URL || configService.get<string>('DATABASE_URL');
 
-        // Kiểm tra xem chuỗi URL có hợp lệ không (Phải có ký tự '@' của liên kết mạng nội bộ)
-        const isUrlValid = dbUrl && dbUrl.includes('@');
-
-        // 1. 🚀 MÔI TRƯỜNG CHẠY THỰC TẾ TRÊN PRODUCTION (RUNTIME CỦA RAILWAY)
-        if (isUrlValid) {
+        // 1. 🚀 MÔI TRƯỜNG RUNTIME THỰC TẾ TRÊN CLOUD (Có tồn tại biến DATABASE_URL)
+        if (dbUrl) {
           console.log(
-            '===> [RUNTIME] ĐÃ ĐỌC ĐƯỢC URL DATABASE POSTGRES HỢP LỆ. KHỞI CHẠY KẾT NỐI!',
+            '===> [RUNTIME] ĐÃ PHÁT HIỆN DATABASE_URL. TIẾN HÀNH KẾT NỐI POSTGRES PRODUCTION!',
           );
           return {
             type: 'postgres',
             url: dbUrl,
             entities: [User, Product, Category, Cart, CartItem],
             autoLoadEntities: true,
-            synchronize: true, // Tự động đồng bộ bảng lên Postgres của Railway
+            synchronize: true, // Tự động tạo bảng trên Postgres của Railway [1]
           };
         }
 
-        // 2. 🛠️ TRƯỜNG HỢP ĐANG BUILD DOCKER (BUILD-TIME TRÊN CLOUD)
-        // Nếu biến NODE_ENV là production nhưng chuỗi URL chưa nạp hoặc chưa hợp lệ
-        if (process.env.NODE_ENV === 'production' || !dbUrl) {
+        // 2. 🛠️ MÔI TRƯỜNG DOCKER BUILD HOẶC DEV LOCAL (Khi KHÔNG có biến DATABASE_URL)
+        // Nếu đang build trên Cloud, dbUrl sẽ trống -> Trả về cấu hình giả lập để vượt qua bước biên dịch [1]
+        if (process.env.NODE_ENV === 'production') {
           console.log(
-            '===> [BUILD-TIME] ĐANG BUILD DOCKER HOẶC THIẾU BIẾN CLOUD - TRẢ VỀ CẤU HÌNH GIẢ LẬP',
+            '===> [BUILD-TIME] KHÔNG TÌM THẤY URL TRONG BƯỚC BUILD - DÙNG CẤU HÌNH PHỤ TRỢ',
           );
           return {
             type: 'postgres',
@@ -88,8 +85,8 @@ import { APP_GUARD } from '@nestjs/core';
           };
         }
 
-        // 3. 💻 MÔI TRƯỜNG DEV TẠI MÁY LOCAL CỦA BẠN (DÙNG MYSQL)
-        console.log('===> [LOCAL] ĐANG CHẠY MYSQL TẠI MÁY CỤC BỘ');
+        // 3. 💻 MÔI TRƯỜNG DEV TẠI MÁY CỤC BỘ CỦA BẠN (DÙNG MYSQL)
+        console.log('===> [LOCAL] ĐANG CHẠY MYSQL TẠI MÁY CỤC BỘ [1]');
         return {
           type: 'mysql',
           host: configService.get<string>('DB_HOST') || 'localhost',
