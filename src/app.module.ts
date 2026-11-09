@@ -22,32 +22,34 @@ import { ReportsModule } from './reports/reports.module';
 import { AuthGuard } from './guards/auth.guard';
 import { APP_GUARD } from '@nestjs/core';
 // import { ClientsModule, Transport } from '@nestjs/microservices';
+
 @Module({
   imports: [
-    TypeOrmModule.forRootAsync({
-      imports: [
-        ConfigModule.forRoot({
-          isGlobal: true,
-        }),
-        I18nModule.forRoot({
-          fallbackLanguage: 'en',
+    // 1. Đưa ConfigModule lên đầu tiên và bật isGlobal: true để dùng chung cho toàn bộ app
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
 
-          loaderOptions: {
-            path: join(__dirname, 'i18n'),
-            watch: true,
-          },
-
-          resolvers: [
-            {
-              use: QueryResolver,
-              options: ['lang'],
-            },
-            AcceptLanguageResolver,
-          ],
-        }),
+    I18nModule.forRoot({
+      fallbackLanguage: 'en',
+      loaderOptions: {
+        path: join(__dirname, 'i18n'),
+        watch: true,
+      },
+      resolvers: [
+        {
+          use: QueryResolver,
+          options: ['lang'],
+        },
+        AcceptLanguageResolver,
       ],
+    }),
+
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const dbUrl = configService.get('DATABASE_URL');
+        const dbUrl =
+          configService.get<string>('DATABASE_URL') || process.env.DATABASE_URL;
 
         console.log(
           '===> ĐỊA CHỈ DATABASE TRÊN CLOUD LÀ:',
@@ -55,35 +57,31 @@ import { APP_GUARD } from '@nestjs/core';
           configService,
         );
 
-        // Nếu có biến DATABASE_URL (Môi trường Cloud Railway)
         if (dbUrl) {
           return {
-            type: 'postgres',
+            type: 'postgres', // Đảm bảo dùng driver 'postgres' cho production
             url: dbUrl,
             entities: [User, Product, Category, Cart, CartItem],
             autoLoadEntities: true,
-            synchronize: true,
+            synchronize: true, // Tự động tạo bảng trên Postgres của Railway
           };
         }
 
-        // Nếu không có DATABASE_URL (Môi trường dev Local của bạn)
+        // Môi trường Local của bạn
         return {
           type: 'mysql',
-          host: configService.get('DB_HOST') || 'localhost',
+          host: configService.get<string>('DB_HOST') || 'localhost',
           port: +configService.get('DB_PORT') || 3306,
-          username: configService.get('DB_USERNAME') || 'root',
-          password: configService.get('DB_PASSWORD') || '',
-          database: configService.get('DB_DATABASE_NAME') || 'test',
+          username: configService.get<string>('DB_USERNAME') || 'root',
+          password: configService.get<string>('DB_PASSWORD') || '',
+          database: configService.get<string>('DB_DATABASE_NAME') || 'test',
           entities: [User, Product, Category, Cart, CartItem],
           autoLoadEntities: true,
           synchronize: false,
         };
       },
-      inject: [ConfigService],
     }),
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
+
     // ClientsModule.register([
     //   {
     //     name: 'KAFKA_SERVICE',
@@ -99,6 +97,7 @@ import { APP_GUARD } from '@nestjs/core';
     //     },
     //   },
     // ]),
+
     ScheduleModule.forRoot(),
     UsersModule,
     ProductsModule,
