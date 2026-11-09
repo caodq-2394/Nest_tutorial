@@ -49,6 +49,12 @@ import { APP_GUARD } from '@nestjs/core';
       useFactory: (configService: ConfigService) => {
         const dbUrl = configService.get('DATABASE_URL');
 
+        console.log(
+          '===> ĐỊA CHỈ DATABASE TRÊN CLOUD LÀ:',
+          dbUrl ? 'ĐÃ ĐỌC ĐƯỢC URL' : 'TRỐNG (UNDEFINED)',
+          configService,
+        );
+
         // Nếu có biến DATABASE_URL (Môi trường Cloud Railway)
         if (dbUrl) {
           return {
