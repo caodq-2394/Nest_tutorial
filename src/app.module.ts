@@ -48,45 +48,27 @@ import { APP_GUARD } from '@nestjs/core';
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        // Đọc trực tiếp từ hệ thống hoặc qua ConfigService
+        // 1. Nếu tìm thấy DATABASE_URL (Ưu tiên chuỗi kết nối Cloud Postgres)
         const dbUrl =
           process.env.DATABASE_URL || configService.get<string>('DATABASE_URL');
 
-        // 1. 🚀 MÔI TRƯỜNG RUNTIME THỰC TẾ TRÊN CLOUD (Có tồn tại biến DATABASE_URL)
         if (dbUrl) {
           console.log(
-            '===> [RUNTIME] ĐÃ PHÁT HIỆN DATABASE_URL. TIẾN HÀNH KẾT NỐI POSTGRES PRODUCTION!',
+            '===> [PRODUCTION] ĐÃ PHÁT HIỆN DATABASE_URL. TIẾN HÀNH KẾT NỐI POSTGRES!',
           );
           return {
             type: 'postgres',
             url: dbUrl,
             entities: [User, Product, Category, Cart, CartItem],
             autoLoadEntities: true,
-            synchronize: true, // Tự động tạo bảng trên Postgres của Railway [1]
+            synchronize: true, // Tự động tạo các bảng dữ liệu lên Postgres trên Cloud
           };
         }
 
-        // 2. 🛠️ MÔI TRƯỜNG DOCKER BUILD HOẶC DEV LOCAL (Khi KHÔNG có biến DATABASE_URL)
-        // Nếu đang build trên Cloud, dbUrl sẽ trống -> Trả về cấu hình giả lập để vượt qua bước biên dịch [1]
-        if (process.env.NODE_ENV === 'production') {
-          console.log(
-            '===> [BUILD-TIME] KHÔNG TÌM THẤY URL TRONG BƯỚC BUILD - DÙNG CẤU HÌNH PHỤ TRỢ',
-          );
-          return {
-            type: 'postgres',
-            host: 'localhost',
-            port: 5432,
-            username: 'placeholder',
-            password: 'placeholder',
-            database: 'placeholder',
-            entities: [User, Product, Category, Cart, CartItem],
-            autoLoadEntities: true,
-            synchronize: false,
-          };
-        }
-
-        // 3. 💻 MÔI TRƯỜNG DEV TẠI MÁY CỤC BỘ CỦA BẠN (DÙNG MYSQL)
-        console.log('===> [LOCAL] ĐANG CHẠY MYSQL TẠI MÁY CỤC BỘ [1]');
+        // 2. Nếu KHÔNG tìm thấy DATABASE_URL (Môi trường Dev Local dùng MySQL của bạn)
+        console.log(
+          '===> [DEVELOPMENT] KHÔNG CÓ URL CLOUD. KHỞI CHẠY MYSQL LOCAL!',
+        );
         return {
           type: 'mysql',
           host: configService.get<string>('DB_HOST') || 'localhost',
