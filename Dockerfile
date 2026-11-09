@@ -15,9 +15,10 @@ COPY package*.json ./
 
 RUN npm install --only=production --legacy-peer-deps
 
-COPY --from=builder /usr/src/app/dist /usr/src/app/dist
-COPY --from=builder /usr/src/app/src/i18n /usr/src/app/dist/i18n
+# Copy toàn bộ thư mục dist (bao gồm dist/src/main.js và các tệp i18n bên trong) từ builder sang
+COPY --from=builder /usr/src/app/dist ./dist
 
 EXPOSE 3000
 
-CMD ["node", "dist/main.js"]
+# SỬA TẠI ĐÂY: Trỏ chính xác vào file main.js nằm trong thư mục dist/src/
+CMD ["node", "dist/src/main.js"]
