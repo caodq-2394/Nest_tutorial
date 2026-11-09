@@ -18,4 +18,4 @@ RUN npm run build
 EXPOSE 3000
 
 # Khởi chạy ứng dụng trực tiếp bằng npm script để package.json tự động đồng bộ biến môi trường hệ thống
-CMD ["npm", "run", "start:prod"]
+CMD ["node", "dist/src/main.js"]
