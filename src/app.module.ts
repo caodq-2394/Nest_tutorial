@@ -48,17 +48,17 @@ import { APP_GUARD } from '@nestjs/core';
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const dbUrl = process.env.DATABASE_URL;
+        // Ưu tiên đọc biến hệ thống trực tiếp từ process.env
+        const dbUrl =
+          process.env.DATABASE_URL || configService.get<string>('DATABASE_URL');
 
-        console.log(
-          '===> ĐỊA CHỈ DATABASE TRÊN CLOUD LÀ:',
-          dbUrl ? 'ĐÃ ĐỌC ĐƯỢC URL' : 'TRỐNG (UNDEFINED)',
-          configService,
-        );
-
+        // 1. 🚀 TRƯỜNG HỢP CHẠY THỰC TẾ TRÊN PRODUCTION (RUNTIME CỦA RAILWAY)
         if (dbUrl) {
+          console.log(
+            '===> [RUNTIME] ĐÃ KẾT NỐI DATABASE POSTGRES THÀNH CÔNG!',
+          );
           return {
-            type: 'postgres', // Đảm bảo dùng driver 'postgres' cho production
+            type: 'postgres',
             url: dbUrl,
             entities: [User, Product, Category, Cart, CartItem],
             autoLoadEntities: true,
@@ -66,7 +66,27 @@ import { APP_GUARD } from '@nestjs/core';
           };
         }
 
-        // Môi trường Local của bạn
+        // 2. 🛠️ TRƯỜNG HỢP ĐANG BUILD TRONG DOCKER (BUILD-TIME TRÊN CLOUD)
+        // Nếu phát hiện đang chạy trong container Docker mà không có biến môi trường
+        if (process.env.NODE_ENV === 'production' || !dbUrl) {
+          console.log(
+            '===> [BUILD-TIME] ĐANG BUILD DOCKER - TRẢ VỀ CẤU HÌNH GIẢ LẬP POSTGRES',
+          );
+          return {
+            type: 'postgres', // Đồng bộ driver postgres để bước build nạp đúng thư viện pg
+            host: 'localhost',
+            port: 5432,
+            username: 'placeholder',
+            password: 'placeholder',
+            database: 'placeholder',
+            entities: [User, Product, Category, Cart, CartItem],
+            autoLoadEntities: true,
+            synchronize: false,
+          };
+        }
+
+        // 3. 💻 MÔI TRƯỜNG DEV TẠI MÁY LOCAL CỦA BẠN (DÙNG MYSQL)
+        console.log('===> [LOCAL] ĐANG CHẠY MYSQL TẠI MÁY CỤC BỘ');
         return {
           type: 'mysql',
           host: configService.get<string>('DB_HOST') || 'localhost',
