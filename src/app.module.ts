@@ -48,6 +48,24 @@ import { APP_GUARD } from '@nestjs/core';
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
+        // 🚀 ÉP BUỘC DÙNG POSTGRES PUBLIC URL
+        console.log('===> [PRODUCTION] ÉP KẾT NỐI POSTGRES QUA PUBLIC URL!');
+        return {
+          type: 'postgres',
+          // DÁN CHUỖI DATABASE_PUBLIC_URL CỦA BẠN VÀO ĐÂY (Ví dụ dạng dưới)
+          url: 'postgresql://postgres:AblXwvicJOSLydmMorjaUubRsfOBYCVS@maglev.proxy.rlwy.net:xxxxx/railway',
+          entities: [User, Product, Category, Cart, CartItem],
+          autoLoadEntities: true,
+          synchronize: true, // Tự động tạo bảng dữ liệu
+          ssl: {
+            rejectUnauthorized: false, // Bắt buộc phải có dòng này khi kết nối từ ngoài vào Postgres Railway
+          },
+        };
+      },
+    }),
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
         // 1. Nếu tìm thấy DATABASE_URL (Ưu tiên chuỗi kết nối Cloud Postgres)
         const dbUrl =
           process.env.DATABASE_URL || configService.get<string>('DATABASE_URL');
