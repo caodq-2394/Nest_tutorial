@@ -46,18 +46,33 @@ import { APP_GUARD } from '@nestjs/core';
           ],
         }),
       ],
-      useFactory: (configService: ConfigService) => ({
-        type: 'mysql',
-        host: configService.get('DB_HOST'),
-        port: +configService.get('DB_PORT'),
-        username: configService.get('DB_USERNAME'),
-        password: configService.get('DB_PASSWORD'),
-        database: configService.get('DB_DATABASE_NAME'),
-        entities: [User, Product, Category, Cart, CartItem],
-        // entities: ['src/**/*.entity.ts'],
-        autoLoadEntities: true,
-        synchronize: false,
-      }),
+      useFactory: (configService: ConfigService) => {
+        const dbUrl = configService.get('DATABASE_URL');
+
+        // Nếu có biến DATABASE_URL (Môi trường Cloud Railway)
+        if (dbUrl) {
+          return {
+            type: 'postgres',
+            url: dbUrl,
+            entities: [User, Product, Category, Cart, CartItem],
+            autoLoadEntities: true,
+            synchronize: true,
+          };
+        }
+
+        // Nếu không có DATABASE_URL (Môi trường dev Local của bạn)
+        return {
+          type: 'mysql',
+          host: configService.get('DB_HOST') || 'localhost',
+          port: +configService.get('DB_PORT') || 3306,
+          username: configService.get('DB_USERNAME') || 'root',
+          password: configService.get('DB_PASSWORD') || '',
+          database: configService.get('DB_DATABASE_NAME') || 'test',
+          entities: [User, Product, Category, Cart, CartItem],
+          autoLoadEntities: true,
+          synchronize: false,
+        };
+      },
       inject: [ConfigService],
     }),
     ConfigModule.forRoot({
