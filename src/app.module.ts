@@ -48,32 +48,35 @@ import { APP_GUARD } from '@nestjs/core';
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        // Ưu tiên đọc biến hệ thống trực tiếp từ process.env
+        // Đọc biến môi trường tổng hợp từ Railway
         const dbUrl =
           process.env.DATABASE_URL || configService.get<string>('DATABASE_URL');
 
-        // 1. 🚀 TRƯỜNG HỢP CHẠY THỰC TẾ TRÊN PRODUCTION (RUNTIME CỦA RAILWAY)
-        if (dbUrl) {
+        // Kiểm tra xem chuỗi URL có hợp lệ không (Phải có ký tự '@' của liên kết mạng nội bộ)
+        const isUrlValid = dbUrl && dbUrl.includes('@');
+
+        // 1. 🚀 MÔI TRƯỜNG CHẠY THỰC TẾ TRÊN PRODUCTION (RUNTIME CỦA RAILWAY)
+        if (isUrlValid) {
           console.log(
-            '===> [RUNTIME] ĐÃ KẾT NỐI DATABASE POSTGRES THÀNH CÔNG!',
+            '===> [RUNTIME] ĐÃ ĐỌC ĐƯỢC URL DATABASE POSTGRES HỢP LỆ. KHỞI CHẠY KẾT NỐI!',
           );
           return {
             type: 'postgres',
             url: dbUrl,
             entities: [User, Product, Category, Cart, CartItem],
             autoLoadEntities: true,
-            synchronize: true, // Tự động tạo bảng trên Postgres của Railway
+            synchronize: true, // Tự động đồng bộ bảng lên Postgres của Railway
           };
         }
 
-        // 2. 🛠️ TRƯỜNG HỢP ĐANG BUILD TRONG DOCKER (BUILD-TIME TRÊN CLOUD)
-        // Nếu phát hiện đang chạy trong container Docker mà không có biến môi trường
+        // 2. 🛠️ TRƯỜNG HỢP ĐANG BUILD DOCKER (BUILD-TIME TRÊN CLOUD)
+        // Nếu biến NODE_ENV là production nhưng chuỗi URL chưa nạp hoặc chưa hợp lệ
         if (process.env.NODE_ENV === 'production' || !dbUrl) {
           console.log(
-            '===> [BUILD-TIME] ĐANG BUILD DOCKER - TRẢ VỀ CẤU HÌNH GIẢ LẬP POSTGRES',
+            '===> [BUILD-TIME] ĐANG BUILD DOCKER HOẶC THIẾU BIẾN CLOUD - TRẢ VỀ CẤU HÌNH GIẢ LẬP',
           );
           return {
-            type: 'postgres', // Đồng bộ driver postgres để bước build nạp đúng thư viện pg
+            type: 'postgres',
             host: 'localhost',
             port: 5432,
             username: 'placeholder',
