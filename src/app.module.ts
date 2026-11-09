@@ -52,7 +52,6 @@ import { APP_GUARD } from '@nestjs/core';
         console.log('===> [PRODUCTION] ÉP KẾT NỐI POSTGRES QUA PUBLIC URL!');
         return {
           type: 'postgres',
-          // DÁN CHUỖI DATABASE_PUBLIC_URL CỦA BẠN VÀO ĐÂY (Ví dụ dạng dưới)
           url: 'postgresql://postgres:AblXwvicJOSLydmMorjaUubRsfOBYCVS@maglev.proxy.rlwy.net:xxxxx/railway',
           entities: [User, Product, Category, Cart, CartItem],
           autoLoadEntities: true,
@@ -60,43 +59,6 @@ import { APP_GUARD } from '@nestjs/core';
           ssl: {
             rejectUnauthorized: false, // Bắt buộc phải có dòng này khi kết nối từ ngoài vào Postgres Railway
           },
-        };
-      },
-    }),
-    TypeOrmModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        // 1. Nếu tìm thấy DATABASE_URL (Ưu tiên chuỗi kết nối Cloud Postgres)
-        const dbUrl =
-          process.env.DATABASE_URL || configService.get<string>('DATABASE_URL');
-
-        if (dbUrl) {
-          console.log(
-            '===> [PRODUCTION] ĐÃ PHÁT HIỆN DATABASE_URL. TIẾN HÀNH KẾT NỐI POSTGRES!',
-          );
-          return {
-            type: 'postgres',
-            url: dbUrl,
-            entities: [User, Product, Category, Cart, CartItem],
-            autoLoadEntities: true,
-            synchronize: true, // Tự động tạo các bảng dữ liệu lên Postgres trên Cloud
-          };
-        }
-
-        // 2. Nếu KHÔNG tìm thấy DATABASE_URL (Môi trường Dev Local dùng MySQL của bạn)
-        console.log(
-          '===> [DEVELOPMENT] KHÔNG CÓ URL CLOUD. KHỞI CHẠY MYSQL LOCAL!',
-        );
-        return {
-          type: 'mysql',
-          host: configService.get<string>('DB_HOST') || 'localhost',
-          port: +configService.get('DB_PORT') || 3306,
-          username: configService.get<string>('DB_USERNAME') || 'root',
-          password: configService.get<string>('DB_PASSWORD') || '',
-          database: configService.get<string>('DB_DATABASE_NAME') || 'test',
-          entities: [User, Product, Category, Cart, CartItem],
-          autoLoadEntities: true,
-          synchronize: false,
         };
       },
     }),
