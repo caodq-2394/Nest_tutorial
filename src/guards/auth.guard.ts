@@ -19,8 +19,13 @@ export class AuthGuard implements CanActivate {
 
     // 1. ĐƯA LÊN ĐẦU: Kiểm tra cứng URL (Giải pháp chống sập tuyệt đối cho Google Auth)
     // Nếu URL chứa chữ "/google", cho qua luôn, không chạy xuống đoạn tìm User theo ID dưới nữa
-    if (request.url && request.url.includes('/google')) {
-      return true;
+    if (
+      request.url &&
+      (request.url.includes('/google') ||
+        request.url.includes('/register') ||
+        request.url.includes('/login'))
+    ) {
+      return true; // Cho qua luôn, không chạy xuống check token hay reflector nữa
     }
 
     // 2. Sử dụng Reflector cho các API Public khác

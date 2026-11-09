@@ -44,6 +44,7 @@ export class UsersController {
     private readonly i18n: I18nService,
   ) {}
 
+  @Public()
   @Post('/register')
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({
@@ -55,6 +56,7 @@ export class UsersController {
     return this.authService.registerUser(registerUserDto);
   }
 
+  @Public()
   @Post('/login')
   async login(@Body() loginDto: LoginUserDto) {
     const user = await this.authService.validateUser(
