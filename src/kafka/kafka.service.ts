@@ -24,6 +24,7 @@ export class KafkaService implements OnModuleInit, OnApplicationShutdown {
   private consumer?: Consumer;
   private connected = false;
   private connecting = false;
+  private disconnecting = false;
   private shuttingDown = false;
   private reconnectTimer?: NodeJS.Timeout;
 
@@ -80,6 +81,8 @@ export class KafkaService implements OnModuleInit, OnApplicationShutdown {
       this.handleDisconnect('consumer disconnected');
     });
     this.consumer.on(this.consumer.events.CRASH, ({ payload }) => {
+      if (payload.restart) return;
+
       this.logger.error(
         `Kafka consumer crashed: ${this.errorMessage(payload.error)}`,
       );
@@ -176,6 +179,8 @@ export class KafkaService implements OnModuleInit, OnApplicationShutdown {
 
   private handleDisconnect(reason: string): void {
     this.connected = false;
+    if (this.disconnecting || this.shuttingDown) return;
+
     this.logger.warn(`Kafka unavailable: ${reason}.`);
     this.scheduleReconnect();
   }
@@ -185,17 +190,27 @@ export class KafkaService implements OnModuleInit, OnApplicationShutdown {
 
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = undefined;
-      void this.connect();
+      void this.reconnect();
     }, 5000);
     this.reconnectTimer.unref();
   }
 
+  private async reconnect(): Promise<void> {
+    await this.disconnect();
+    await this.connect();
+  }
+
   private async disconnect(): Promise<void> {
     this.connected = false;
-    await Promise.allSettled([
-      this.consumer?.disconnect() ?? Promise.resolve(),
-      this.producer?.disconnect() ?? Promise.resolve(),
-    ]);
+    this.disconnecting = true;
+    try {
+      await Promise.allSettled([
+        this.consumer?.disconnect() ?? Promise.resolve(),
+        this.producer?.disconnect() ?? Promise.resolve(),
+      ]);
+    } finally {
+      this.disconnecting = false;
+    }
   }
 
   private errorMessage(error: unknown): string {
