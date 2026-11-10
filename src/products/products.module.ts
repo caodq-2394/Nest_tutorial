@@ -16,6 +16,7 @@ import { ProductsController } from './products.controller';
 import { ProductsService } from './products.service';
 import { AdminProductsController } from './admin-product.controller';
 import { AdminProductsService } from './admin-product.service';
+import { ProductsGrpcController } from '../grpc/products.grpc.controller';
 
 @Module({
   imports: [
@@ -25,7 +26,11 @@ import { AdminProductsService } from './admin-product.service';
     CloudinaryModule,
     ProductImageModule,
   ],
-  controllers: [ProductsController, AdminProductsController],
+  controllers: [
+    ProductsController,
+    AdminProductsController,
+    ProductsGrpcController,
+  ],
   providers: [
     ProductsService,
     AdminProductsService,

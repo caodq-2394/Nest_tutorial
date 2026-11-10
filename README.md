@@ -59,6 +59,16 @@ $ npm run test:cov
 
 ## Deployment
 
+### gRPC product catalog
+
+The Nest application runs the HTTP API and a gRPC server in the same Railway service. The gRPC server implements `ProductCatalog.GetProduct` and `ProductCatalog.ListFeaturedProducts`; its contract is in `src/grpc/proto/products.proto`. These catalog methods are public and read-only.
+
+For local development, start the app as usual with `npm run start:dev`. HTTP uses `PORT` (defaults to `3000`) and gRPC listens on `GRPC_PORT` (defaults to `50051`). A client can call the local gRPC server at `localhost:50051`.
+
+On Railway, keep the existing Dockerfile deployment and ensure the service has the database variables required by the app: `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, and `DB_DATABASE_NAME`. Railway supplies `PORT` for the HTTP health check; set `GRPC_PORT=50051` only if you want to make the value explicit. Other Railway services in the same project can connect to `<service-name>.railway.internal:50051`. To call gRPC from outside Railway, configure a TCP Proxy for port `50051`; the regular Railway HTTP domain is for the HTTP API and Swagger at `/api`.
+
+`railway.json` selects the repository Dockerfile and checks `/` for HTTP readiness. Deploy from the project root so the Docker build includes both the compiled application and the proto asset. The gRPC listener binds to `0.0.0.0` and does not replace the HTTP listener.
+
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
 
 If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:

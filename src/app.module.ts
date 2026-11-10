@@ -47,27 +47,18 @@ import { APP_GUARD } from '@nestjs/core';
 
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        console.log(
-          '===> [PRODUCTION] KẾT NỐI POSTGRES QUA THÔNG SỐ TƯỜNG MINH!',
-        );
-        return {
-          type: 'postgres',
-          // Hãy điền chính xác thông tin lấy từ tab Variables của service Postgres trên Railway vào đây:
-          host: 'postgres.railway.internal', // Hoặc domain proxy công khai của bạn ví dụ: maglev.proxy.rlwy.net
-          port: 5432, // Đổi thành số cổng thật của bạn nếu dùng Public (ví dụ 12345)
-          username: 'postgres',
-          password: 'AblXwvicJOSLydmMorjaUubRsfOBYCVS',
-          database: 'railway',
 
-          entities: [User, Product, Category, Cart, CartItem],
-          autoLoadEntities: true,
-          synchronize: true, // Tự động tạo bảng dữ liệu trên Cloud
-          ssl: {
-            rejectUnauthorized: false, // Bắt buộc để kết nối qua môi trường mạng an toàn
-          },
-        };
-      },
+      useFactory: (configService: ConfigService) => ({
+        type: 'mysql',
+        host: configService.get<string>('DB_HOST'),
+        port: Number(configService.get<string>('DB_PORT') ?? 3306),
+        username: configService.get<string>('DB_USERNAME'),
+        password: configService.get<string>('DB_PASSWORD'),
+        database: configService.get<string>('DB_DATABASE_NAME'),
+        entities: [User, Product, Category, Cart, CartItem],
+        autoLoadEntities: true,
+        synchronize: false,
+      }),
     }),
 
     // ClientsModule.register([
