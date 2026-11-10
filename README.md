@@ -25,6 +25,47 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+## Kafka service
+
+Kafka is integrated through `KafkaService` (KafkaJS), not Nest's Kafka transport. It is optional: the HTTP API starts normally when `KAFKA_ENABLED` is not `true`, which is important for Railway deployments that do not provision a Kafka broker.
+
+Copy `.env.example` to `.env` and set the variables. For the included local Docker stack, `api-server` receives `KAFKA_ENABLED=true` and `KAFKA_BROKERS=kafka:29092` automatically. When running Nest directly on the host, use `KAFKA_BROKERS=localhost:9092`.
+
+The authenticated endpoints are listed in Swagger at `/api`:
+
+```http
+GET /api/v1/kafka/status
+POST /api/v1/kafka/publish
+Authorization: Bearer <access-token>
+Content-Type: application/json
+
+{
+  "event": "order.created",
+  "key": "42",
+  "payload": { "orderId": 42, "totalAmount": 350000 }
+}
+```
+
+The service wraps every outgoing message in this envelope:
+
+```json
+{
+  "event": "order.created",
+  "payload": { "orderId": 42, "totalAmount": 350000 },
+  "occurredAt": "2026-11-09T00:00:00.000Z"
+}
+```
+
+It subscribes to `KAFKA_TOPIC` too and logs received records. This gives a verifiable local demo; move the business action from the log handler to a dedicated consumer when adding a real use case (email, analytics, inventory, etc.). A message key keeps records with the same key in the same Kafka partition and therefore preserves their order within that partition.
+
+## Railway deployment
+
+The Dockerfile is compatible with Railway: Railway supplies `PORT`, and the app listens on `0.0.0.0`. Add a Railway PostgreSQL service and reference its `DATABASE_URL` in the API service. Do not keep database credentials in source code. Set `DB_SSL=false` for Railway's private network; set it to `true` only when using a public TLS database endpoint.
+
+Kafka is not included in the Railway deployment by default. Leave `KAFKA_ENABLED=false` to deploy only the API. To enable Kafka, provision a managed Kafka service and add `KAFKA_BROKERS`; for providers that require authentication also add `KAFKA_SSL=true`, `KAFKA_SASL_USERNAME`, `KAFKA_SASL_PASSWORD`, and (usually) `KAFKA_SASL_MECHANISM=plain`.
+
+Before deployment, use `npm run build`. After deploy, inspect Railway logs for a successful database connection and `Kafka connected` when Kafka is enabled. Visit `/api` and call `GET /api/v1/kafka/status`; it must show `enabled: true` and `connected: true` before publishing.
+
 ## Project setup
 
 ```bash
