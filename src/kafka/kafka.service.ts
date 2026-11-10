@@ -23,6 +23,9 @@ export class KafkaService implements OnModuleInit, OnApplicationShutdown {
   private producer?: Producer;
   private consumer?: Consumer;
   private connected = false;
+  private connecting = false;
+  private shuttingDown = false;
+  private reconnectTimer?: NodeJS.Timeout;
 
   constructor(private readonly configService: ConfigService) {
     this.enabled = this.configService.get<string>('KAFKA_ENABLED') === 'true';
@@ -69,11 +72,38 @@ export class KafkaService implements OnModuleInit, OnApplicationShutdown {
         this.configService.get<string>('KAFKA_CONSUMER_GROUP') ??
         'nest-tutorial-api',
     });
+
+    this.producer.on(this.producer.events.DISCONNECT, () => {
+      this.handleDisconnect('producer disconnected');
+    });
+    this.consumer.on(this.consumer.events.DISCONNECT, () => {
+      this.handleDisconnect('consumer disconnected');
+    });
+    this.consumer.on(this.consumer.events.CRASH, ({ payload }) => {
+      this.logger.error(
+        `Kafka consumer crashed: ${this.errorMessage(payload.error)}`,
+      );
+      this.handleDisconnect('consumer crashed');
+    });
   }
 
-  async onModuleInit(): Promise<void> {
-    if (!this.kafka || !this.producer || !this.consumer) return;
+  onModuleInit(): void {
+    // Kafka is optional: do not delay HTTP startup while KafkaJS retries.
+    void this.connect();
+  }
 
+  private async connect(): Promise<void> {
+    if (
+      !this.kafka ||
+      !this.producer ||
+      !this.consumer ||
+      this.connecting ||
+      this.shuttingDown
+    ) {
+      return;
+    }
+
+    this.connecting = true;
     try {
       await this.producer.connect();
       await this.consumer.connect();
@@ -93,9 +123,11 @@ export class KafkaService implements OnModuleInit, OnApplicationShutdown {
         `Kafka connected; publishing and consuming topic "${this.topic}".`,
       );
     } catch (error) {
-      // Kafka là integration tùy chọn: app HTTP vẫn phải boot được khi broker down.
       this.logger.error(`Kafka is unavailable: ${this.errorMessage(error)}`);
       await this.disconnect();
+      this.scheduleReconnect();
+    } finally {
+      this.connecting = false;
     }
   }
 
@@ -115,10 +147,16 @@ export class KafkaService implements OnModuleInit, OnApplicationShutdown {
       payload,
       occurredAt: new Date().toISOString(),
     };
-    await this.producer.send({
-      topic: this.topic,
-      messages: [{ key, value: JSON.stringify(message) }],
-    });
+    try {
+      await this.producer.send({
+        topic: this.topic,
+        messages: [{ key, value: JSON.stringify(message) }],
+      });
+    } catch (error) {
+      this.logger.error(`Kafka publish failed: ${this.errorMessage(error)}`);
+      this.handleDisconnect('producer send failed');
+      throw new ServiceUnavailableException('Kafka is unavailable.');
+    }
     return { topic: this.topic, event };
   }
 
@@ -131,7 +169,25 @@ export class KafkaService implements OnModuleInit, OnApplicationShutdown {
   }
 
   async onApplicationShutdown(): Promise<void> {
+    this.shuttingDown = true;
+    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     await this.disconnect();
+  }
+
+  private handleDisconnect(reason: string): void {
+    this.connected = false;
+    this.logger.warn(`Kafka unavailable: ${reason}.`);
+    this.scheduleReconnect();
+  }
+
+  private scheduleReconnect(): void {
+    if (this.shuttingDown || this.reconnectTimer) return;
+
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = undefined;
+      void this.connect();
+    }, 5000);
+    this.reconnectTimer.unref();
   }
 
   private async disconnect(): Promise<void> {

@@ -1,5 +1,8 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { RolesGuard } from 'src/guards/roles.guard';
+import { Roles } from 'src/users/decorators/roles.decorator';
+import { UserRoles } from 'src/users/entities/user.entity';
 import { KafkaService } from './kafka.service';
 import { PublishKafkaMessageDto } from './dto/publish-kafka-message.dto';
 
@@ -15,6 +18,8 @@ export class KafkaController {
   }
 
   @Post('publish')
+  @UseGuards(RolesGuard)
+  @Roles(UserRoles.ADMIN)
   async publish(@Body() dto: PublishKafkaMessageDto) {
     const data = await this.kafkaService.publish(
       dto.event,

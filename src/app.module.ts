@@ -48,14 +48,18 @@ import { KafkaModule } from './kafka/kafka.module';
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
+        const databaseUrl = configService.get<string>('DATABASE_URL');
         return {
           type: 'postgres',
-          url: configService.get<string>('DATABASE_URL'),
-          host: configService.get<string>('PGHOST'),
-          port: Number(configService.get<string>('PGPORT') ?? 5432),
-          username: configService.get<string>('PGUSER'),
-          password: configService.get<string>('PGPASSWORD'),
-          database: configService.get<string>('PGDATABASE'),
+          ...(databaseUrl
+            ? { url: databaseUrl }
+            : {
+                host: configService.get<string>('PGHOST'),
+                port: Number(configService.get<string>('PGPORT') ?? 5432),
+                username: configService.get<string>('PGUSER'),
+                password: configService.get<string>('PGPASSWORD'),
+                database: configService.get<string>('PGDATABASE'),
+              }),
 
           entities: [User, Product, Category, Cart, CartItem],
           autoLoadEntities: true,

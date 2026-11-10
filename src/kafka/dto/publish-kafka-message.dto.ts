@@ -1,9 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsObject,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export class PublishKafkaMessageDto {
   @ApiProperty({ example: 'order.created' })
   @IsString()
+  @IsNotEmpty()
   @MaxLength(100)
   event!: string;
 
