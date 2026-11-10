@@ -40,6 +40,7 @@ export class ProductsGrpcController {
     createdAt: Date;
     updatedAt: Date;
     categoryId: number;
+    images?: Array<{ imageUrl: string }>;
     mainImage?: string | null;
   }) {
     return {
@@ -53,7 +54,7 @@ export class ProductsGrpcController {
       createdAt: product.createdAt.toISOString(),
       updatedAt: product.updatedAt.toISOString(),
       categoryId: product.categoryId,
-      mainImage: product.mainImage ?? '',
+      mainImage: product.images?.[0]?.imageUrl ?? product.mainImage ?? '',
     };
   }
 }

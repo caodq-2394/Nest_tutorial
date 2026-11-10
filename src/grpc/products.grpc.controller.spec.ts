@@ -31,14 +31,22 @@ describe('ProductsGrpcController', () => {
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
       updatedAt: new Date('2026-01-02T00:00:00.000Z'),
       categoryId: 3,
-      mainImage: 'https://example.test/lamp.png',
+      images: [{ imageUrl: 'https://example.test/lamp.png' }],
     };
     productsService.findOne.mockResolvedValue(product as never);
 
     await expect(controller.getProduct({ id: 12 })).resolves.toEqual({
-      ...product,
+      id: 12,
+      name: 'Desk lamp',
+      description: 'Adjustable lamp',
+      price: 39.5,
+      stock: 4,
+      isActive: true,
+      isFeatured: false,
       createdAt: '2026-01-01T00:00:00.000Z',
       updatedAt: '2026-01-02T00:00:00.000Z',
+      categoryId: 3,
+      mainImage: 'https://example.test/lamp.png',
     });
   });
 
