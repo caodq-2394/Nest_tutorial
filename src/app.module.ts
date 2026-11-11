@@ -21,7 +21,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ReportsModule } from './reports/reports.module';
 import { AuthGuard } from './guards/auth.guard';
 import { APP_GUARD } from '@nestjs/core';
-// import { ClientsModule, Transport } from '@nestjs/microservices';
+import { KafkaModule } from './kafka/kafka.module';
 
 @Module({
   imports: [
@@ -48,43 +48,30 @@ import { APP_GUARD } from '@nestjs/core';
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        console.log(
-          '===> [PRODUCTION] KẾT NỐI POSTGRES QUA THÔNG SỐ TƯỜNG MINH!',
-        );
+        const databaseUrl = configService.get<string>('DATABASE_URL');
         return {
           type: 'postgres',
-          // Hãy điền chính xác thông tin lấy từ tab Variables của service Postgres trên Railway vào đây:
-          host: 'postgres.railway.internal', // Hoặc domain proxy công khai của bạn ví dụ: maglev.proxy.rlwy.net
-          port: 5432, // Đổi thành số cổng thật của bạn nếu dùng Public (ví dụ 12345)
-          username: 'postgres',
-          password: 'AblXwvicJOSLydmMorjaUubRsfOBYCVS',
-          database: 'railway',
+          ...(databaseUrl
+            ? { url: databaseUrl }
+            : {
+                host: configService.get<string>('PGHOST'),
+                port: Number(configService.get<string>('PGPORT') ?? 5432),
+                username: configService.get<string>('PGUSER'),
+                password: configService.get<string>('PGPASSWORD'),
+                database: configService.get<string>('PGDATABASE'),
+              }),
 
           entities: [User, Product, Category, Cart, CartItem],
           autoLoadEntities: true,
-          synchronize: true, // Tự động tạo bảng dữ liệu trên Cloud
-          ssl: {
-            rejectUnauthorized: false, // Bắt buộc để kết nối qua môi trường mạng an toàn
-          },
+          // Chỉ dùng synchronize ở local; production nên chạy migration.
+          synchronize: configService.get<string>('DB_SYNCHRONIZE') === 'true',
+          ssl:
+            configService.get<string>('DB_SSL') === 'true'
+              ? { rejectUnauthorized: false }
+              : false,
         };
       },
     }),
-
-    // ClientsModule.register([
-    //   {
-    //     name: 'KAFKA_SERVICE',
-    //     transport: Transport.KAFKA,
-    //     options: {
-    //       client: {
-    //         clientId: 'nest-tutorial',
-    //         brokers: [process.env.KAFKA_BROKERS || 'localhost:9092'],
-    //       },
-    //       consumer: {
-    //         groupId: 'nest-tutorial-consumer',
-    //       },
-    //     },
-    //   },
-    // ]),
 
     ScheduleModule.forRoot(),
     UsersModule,
@@ -95,6 +82,7 @@ import { APP_GUARD } from '@nestjs/core';
     OrdersModule,
     PaymentsModule,
     ReportsModule,
+    KafkaModule,
   ],
   controllers: [AppController],
   providers: [

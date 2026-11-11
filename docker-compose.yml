@@ -1,16 +1,17 @@
 services:
-  # --- SERVICE DATABASE (MYSQL) ---
+  # --- SERVICE DATABASE (POSTGRES) ---
   api-db:
-    image: mysql:8.0
-    container_name: nest_mysql_db
+    image: postgres:16-alpine
+    container_name: nest_postgres_db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: 'Aa@123456'
-      MYSQL_DATABASE: 'nest_tutorial'
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 'Aa@123456'
+      POSTGRES_DB: nest_tutorial
     ports:
-      - '3306:3306'
+      - '5432:5432'
     volumes:
-      - mysql_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - nest-network
 
@@ -55,9 +56,18 @@ services:
     env_file:
       - .env
     environment:
+      DATABASE_URL: postgresql://postgres:Aa@123456@api-db:5432/nest_tutorial
       DB_HOST: api-db
+      PGHOST: api-db
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: 'Aa@123456'
+      PGDATABASE: nest_tutorial
+      DB_SSL: 'false'
+      DB_SYNCHRONIZE: 'true'
       # Khai báo đường dẫn trỏ tới container Kafka trong mạng nội bộ Docker
       KAFKA_BROKERS: kafka:29092
+      KAFKA_ENABLED: 'true'
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules
@@ -68,7 +78,7 @@ services:
       - nest-network
 
 volumes:
-  mysql_data:
+  postgres_data:
 
 networks:
   nest-network:
