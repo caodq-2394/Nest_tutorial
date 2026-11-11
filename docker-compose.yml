@@ -56,13 +56,7 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://postgres:Aa@123456@api-db:5432/nest_tutorial
-      DB_HOST: api-db
-      PGHOST: api-db
-      PGPORT: 5432
-      PGUSER: postgres
-      PGPASSWORD: 'Aa@123456'
-      PGDATABASE: nest_tutorial
+      DATABASE_URL: postgresql://postgres:Aa%40123456@api-db:5432/nest_tutorial
       DB_SSL: 'false'
       DB_SYNCHRONIZE: 'true'
       # Khai báo đường dẫn trỏ tới container Kafka trong mạng nội bộ Docker

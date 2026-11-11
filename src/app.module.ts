@@ -49,20 +49,23 @@ import { KafkaModule } from './kafka/kafka.module';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const databaseUrl = configService.get<string>('DATABASE_URL');
+
+        if (!databaseUrl) {
+          throw new Error('DATABASE_URL must be configured for PostgreSQL');
+        }
+
         return {
           type: 'postgres',
-          ...(databaseUrl
-            ? { url: databaseUrl }
-            : {
-                host: configService.get<string>('PGHOST'),
-                port: Number(configService.get<string>('PGPORT') ?? 5432),
-                username: configService.get<string>('PGUSER'),
-                password: configService.get<string>('PGPASSWORD'),
-                database: configService.get<string>('PGDATABASE'),
-              }),
+          url: databaseUrl,
 
           entities: [User, Product, Category, Cart, CartItem],
           autoLoadEntities: true,
+          migrations: [join(__dirname, 'database/migrations/*{.ts,.js}')],
+          migrationsRun: true,
+          // A database deployment can become ready a few seconds after the API.
+          // Keep retrying long enough for Railway to finish starting Postgres.
+          retryAttempts: 20,
+          retryDelay: 3000,
           // Chỉ dùng synchronize ở local; production nên chạy migration.
           synchronize: configService.get<string>('DB_SYNCHRONIZE') === 'true',
           ssl:

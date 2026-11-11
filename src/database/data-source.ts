@@ -1,17 +1,18 @@
 import 'dotenv/config';
 import { DataSource } from 'typeorm';
+import { join } from 'path';
+
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+  throw new Error('DATABASE_URL must be configured for PostgreSQL');
+}
 
 export default new DataSource({
-  type: 'mysql',
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT ?? 3306),
-  username: process.env.DB_USERNAME,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_DATABASE_NAME,
-
-  entities: ['src/**/*.entity.ts'],
-
-  migrations: ['src/database/migrations/*.ts'],
-
+  type: 'postgres',
+  url: databaseUrl,
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+  entities: [join(__dirname, '../**/*.entity{.ts,.js}')],
+  migrations: [join(__dirname, 'migrations/*{.ts,.js}')],
   synchronize: false,
 });

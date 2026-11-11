@@ -42,7 +42,6 @@
     "dotenv": "^17.4.2",
     "kafkajs": "^2.2.4",
     "multer": "^2.2.0",
-    "mysql2": "^3.23.3",
     "nestjs-i18n": "^10.8.5",
     "nodemailer": "^9.0.5",
     "passport": "^0.7.0",
