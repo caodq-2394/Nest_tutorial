@@ -49,14 +49,29 @@ import { KafkaModule } from './kafka/kafka.module';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const databaseUrl = configService.get<string>('DATABASE_URL');
+        const host = configService.get<string>('PGHOST');
+        const port = configService.get<string>('PGPORT');
+        const username = configService.get<string>('PGUSER');
+        const password = configService.get<string>('PGPASSWORD');
+        const database = configService.get<string>('PGDATABASE');
 
-        if (!databaseUrl) {
-          throw new Error('DATABASE_URL must be configured for PostgreSQL');
+        if (!databaseUrl && !(host && username && password && database)) {
+          throw new Error(
+            'PostgreSQL configuration is missing. Set DATABASE_URL or PGHOST, PGPORT, PGUSER, PGPASSWORD and PGDATABASE.',
+          );
         }
 
         return {
           type: 'postgres',
-          url: databaseUrl,
+          ...(databaseUrl
+            ? { url: databaseUrl }
+            : {
+                host,
+                port: Number(port ?? 5432),
+                username,
+                password,
+                database,
+              }),
 
           entities: [User, Product, Category, Cart, CartItem],
           autoLoadEntities: true,
