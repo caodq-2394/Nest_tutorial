@@ -58,7 +58,9 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:Aa%40123456@api-db:5432/nest_tutorial
       DB_SSL: 'false'
-      DB_SYNCHRONIZE: 'true'
+      # Migrations own the schema. synchronize can create objects before a
+      # migration is recorded and make subsequent migration runs fail.
+      DB_SYNCHRONIZE: 'false'
       # Khai báo đường dẫn trỏ tới container Kafka trong mạng nội bộ Docker
       KAFKA_BROKERS: kafka:29092
       KAFKA_ENABLED: 'true'
