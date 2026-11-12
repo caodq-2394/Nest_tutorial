@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
+import { Public } from './users/decorators/public.decorator';
 // import { ClientKafka, EventPattern, Payload } from '@nestjs/microservices';
 
 @Controller()
@@ -12,6 +13,19 @@ export class AppController {
   @Get()
   getHello(): string {
     return this.appService.getHello();
+  }
+
+  /**
+   * Lightweight liveness endpoint for Railway and other deployment checks.
+   * It deliberately does not query external dependencies.
+   */
+  @Public()
+  @Get('health')
+  getHealth() {
+    return {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+    };
   }
 
   // 1. Endpoint HTTP dùng để bắn thử sự kiện lên Kafka
